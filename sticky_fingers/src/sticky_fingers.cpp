@@ -28,11 +28,13 @@ namespace gazebo{
 				sticky_fingers::StickyControlRequest& request,
 				sticky_fingers::StickyControlResponse& response
 			){
-				ROS_INFO("CB.");
 				if(this->sticky && !request.sticky_status){//We are sticky and should stop being such.
 					this->sticky = false;//Stop being sticky.
-					held_object = NULL;//Drop our held object (if any)
+					if(this->held_object != NULL){
+						this->held_object->SetCollideMode("all");
+					}
 					this->finger_link->SetCollideMode("all");//Resume collisionality
+					held_object = NULL;//Drop our held object (if any)
 					response.new_status = false;//Report what we just did.
 					return true;
 				}
@@ -118,7 +120,8 @@ namespace gazebo{
 									math::Pose object_pose = held_object->GetWorldCoGPose();
 									this->ho_trans = finger_pose.CoordPoseSolve(object_pose);
 
-									this->finger_link->SetCollideMode("none");
+									this->finger_link->SetCollideMode("ghost");
+									this->held_object->SetCollideMode("ghost");
 
 									break;
 								}

@@ -79,7 +79,7 @@
   			</joint>
 		</model>
 		
-		<model name="b1">
+		<model name="blocks_light">
 			<pose> 0 1.0 2.125 0 0 0</pose>
 			<link name="b1_body">
 				<collision name="b1_collision">
@@ -138,13 +138,36 @@
   			</joint>
 		</model>
 		
+		<model name="block_heavy">
+			<pose> -0.5 1.0 2.125 0 0 0</pose>
+			<link name="bh_body">
+				<collision name="bh_collision">
+					<geometry>
+						<box>
+							<size>0.25 0.25 0.25</size>
+						</box>
+					</geometry>
+				</collision>
+				<visual name="bh_visual">
+					<geometry>
+						<box>
+							<size>0.25 0.25 0.25</size>
+						</box>
+					</geometry>
+					<material>
+						<ambient>0.0 0.0 0.0 0.0</ambient>
+					</material>
+				</visual>
+				<inertial>
+        			<mass>50</mass>
+        		</inertial>
+			</link>
+		</model>
+		
 		<model name="table">
 			<pose>0 1.0 0.0 0 0 0</pose>
 			<include>
-			    <inertial>
-        			<mass>50</mass>
-        		</inertial>
-          		<static>false</static>
+          		<static>true</static>
           		<uri>model://table</uri>
         	</include>
         </model>
