@@ -10,7 +10,7 @@
 		</include>
 		
 		<model name="finger">
-			<pose>0 1.0 2.0 0 0 0</pose>
+			<pose>0 1.0 4.0 0 0 0</pose>
 			<link name="finger_body">
 				<collision name="fbody_collision">
 					<geometry>
@@ -30,16 +30,6 @@
 					</geometry>
 					<transparency>0.0</transparency>
 				</visual>
-				
-				<sensor name='dummy_contact' type='contact'>
-					<plugin name="sticky_finger_2" filename="libsticky_fingers.so">
-						<capacity>25</capacity>
-					</plugin>
-          			<contact>
-            			<collision>fbody_collision</collision>
-          			</contact>
-        		</sensor>
-				
 			</link>
 			
 			<link name="finger_tip">
@@ -90,7 +80,7 @@
 		</model>
 		
 		<model name="b1">
-			<pose> 0 1.0 0.125 0 0 0</pose>
+			<pose> 0 1.0 2.125 0 0 0</pose>
 			<link name="b1_body">
 				<collision name="b1_collision">
 					<geometry>
@@ -132,12 +122,6 @@
 						<ambient>0.0 0.0 1.0 0.0</ambient>
 					</material>
 				</visual>
-				
-						<sensor name='my_contact' type='contact'>
-          <contact>
-            <collision>b2_collision</collision>
-          </contact>
-        </sensor>
 			</link>
 			
 			<joint name="fixed2" type="prismatic">
@@ -153,5 +137,16 @@
 				</axis>
   			</joint>
 		</model>
+		
+		<model name="table">
+			<pose>0 1.0 0.0 0 0 0</pose>
+			<include>
+			    <inertial>
+        			<mass>50</mass>
+        		</inertial>
+          		<static>false</static>
+          		<uri>model://table</uri>
+        	</include>
+        </model>
 	</world>
 </sdf>
