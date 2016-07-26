@@ -28,7 +28,7 @@ int main(int argc, char** argv){
 		return 1;
 	}
 	
-	while(!client.call(srv)){
+	while(!client.call(srv) && ros::ok()){
 		ROS_INFO("Sending...");
 		ros::spinOnce();
 	}

@@ -1,6 +1,7 @@
 #include <gazebo/sensors/sensors.hh>
 #include <gazebo_ros_control/gazebo_ros_control_plugin.h>
 #include <ros/ros.h>
+#include <tf/tf.h>
 #include <sticky_fingers/StickyControl.h>
 
 namespace gazebo{
@@ -11,7 +12,7 @@ namespace gazebo{
 			bool sticky;
 			physics::LinkPtr held_object;
 
-			math::Pose ho_trans;
+			tf::Transform ho_transform;
 
 			double max_mass;
 
@@ -50,12 +51,11 @@ namespace gazebo{
 
 		public:
 			void Load(sensors::SensorPtr sensor, sdf::ElementPtr sdf){
-
 				this->sticky = false;
 				this->held_object = NULL;
 
 				this->max_mass = sdf->GetElement("capacity")->Get<double>();
-
+				
 				//Get things that require effort to look up and can be kept persistant.
 				this->finger_sensor = boost::dynamic_pointer_cast<sensors::ContactSensor>(sensor);
 				this->finger_world = physics::get_world(finger_sensor->GetWorldName());
@@ -112,16 +112,80 @@ namespace gazebo{
 
 							if(!(candidate->GetModel()->IsStatic())){//Ignore static objects
 								if(candidate->GetInertial()->GetMass() <= this->max_mass){//Ignore heavy objects
-									//ROS_INFO("Grabbing link %s.", candidate->GetName().c_str());
+									ROS_INFO("Grabbing link %s.", candidate->GetName().c_str());
 
 									this->held_object = candidate;
 
 									math::Pose finger_pose = finger_link->GetWorldCoGPose();
 									math::Pose object_pose = held_object->GetWorldCoGPose();
-									this->ho_trans = finger_pose.CoordPoseSolve(object_pose);
+									
+									tf::Transform origin_finger_trans = tf::Transform(
+										tf::Quaternion(finger_pose.rot.x, finger_pose.rot.y, finger_pose.rot.z, finger_pose.rot.w).normalize(),
+										tf::Vector3(finger_pose.pos.x, finger_pose.pos.y, finger_pose.pos.z)
+									);
+									tf::Transform origin_obj_trans = tf::Transform(
+										tf::Quaternion(object_pose.rot.x, object_pose.rot.y, object_pose.rot.z, object_pose.rot.w).normalize(),
+										tf::Vector3(object_pose.pos.x, object_pose.pos.y, object_pose.pos.z)
+									);
+									
+									ho_transform = origin_obj_trans * origin_finger_trans.inverse();
+									
+									ROS_WARN("Offset is (%f, %f, %f)(%f, %f, %f, %f)",
+										ho_transform.getOrigin().x(),
+										ho_transform.getOrigin().y(),
+										ho_transform.getOrigin().z(),
+										
+										ho_transform.getRotation().w(),
+										ho_transform.getRotation().x(),
+										ho_transform.getRotation().y(),
+										ho_transform.getRotation().z()
+									);
 
 									this->finger_link->SetCollideMode("ghost");
 									this->held_object->SetCollideMode("ghost");
+									
+									ROS_WARN("Finger pose is (%f, %f, %f)(%f, %f, %f, %f), Object pose is (%f, %f, %f)(%f, %f, %f, %f)",
+										finger_pose.pos.x, finger_pose.pos.y, finger_pose.pos.z,
+										finger_pose.rot.w, finger_pose.rot.x, finger_pose.rot.y, finger_pose.rot.z,
+										
+										object_pose.pos.x, object_pose.pos.y, object_pose.pos.z,
+										object_pose.rot.w, object_pose.rot.x, object_pose.rot.y, object_pose.rot.z
+									);
+									
+									tf::Transform object_transform = ho_transform * origin_finger_trans;
+									tf::Vector3 oot_vec = object_transform.getOrigin();
+									tf::Quaternion oot_qat = object_transform.getRotation().normalize();
+									
+									math::Pose origin_final_pose = math::Pose(
+										math::Vector3(oot_vec.x(), oot_vec.y(), oot_vec.z()),
+										math::Quaternion(oot_qat.w(), oot_qat.x(), oot_qat.y(), oot_qat.z())
+									);
+									this->held_object->SetWorldPose(origin_final_pose,true,true);
+									this->held_object->SetWorldTwist(
+										finger_link->GetWorldLinearVel(),
+										math::Vector3(0.0, 0.0, 0.0)
+									);
+									
+									ROS_WARN("Finger pose is (%f, %f, %f)(%f, %f, %f, %f), Object pose is (%f, %f, %f)(%f, %f, %f, %f)",
+										finger_link->GetWorldCoGPose().pos.x,
+										finger_link->GetWorldCoGPose().pos.y,
+										finger_link->GetWorldCoGPose().pos.z,
+										
+										finger_link->GetWorldCoGPose().rot.w,
+										finger_link->GetWorldCoGPose().rot.x,
+										finger_link->GetWorldCoGPose().rot.y,
+										finger_link->GetWorldCoGPose().rot.z,
+										
+										
+										held_object->GetWorldCoGPose().pos.x,
+										held_object->GetWorldCoGPose().pos.y,
+										held_object->GetWorldCoGPose().pos.z,
+										
+										held_object->GetWorldCoGPose().rot.w,
+										held_object->GetWorldCoGPose().rot.x,
+										held_object->GetWorldCoGPose().rot.y,
+										held_object->GetWorldCoGPose().rot.z
+									);
 
 									break;
 								}
@@ -130,17 +194,48 @@ namespace gazebo{
 					}
 
 					else{//Carrying mode
-						held_object->SetWorldPose(
-							ho_trans + finger_link->GetWorldCoGPose(),
-							true,
-							true
+					
+						math::Pose finger_pose = finger_link->GetWorldCoGPose();
+					
+						tf::Transform origin_finger_trans = tf::Transform(
+							tf::Quaternion(finger_pose.rot.x, finger_pose.rot.y, finger_pose.rot.z, finger_pose.rot.w).normalize(),
+							tf::Vector3(finger_pose.pos.x, finger_pose.pos.y, finger_pose.pos.z)
 						);
-						//CRUDE first-order approximation of velocity.
-						//This is actually all that is required to prevent jitter.
+					
+						tf::Transform object_transform = ho_transform * origin_finger_trans;
+						tf::Vector3 oot_vec = object_transform.getOrigin();
+						tf::Quaternion oot_qat = object_transform.getRotation().normalize();
+									
+						math::Pose origin_final_pose = math::Pose(
+							math::Vector3(oot_vec.x(), oot_vec.y(), oot_vec.z()),
+							math::Quaternion(oot_qat.w(), oot_qat.x(), oot_qat.y(), oot_qat.z())
+						);
+						this->held_object->SetWorldPose(origin_final_pose,true,true);
 						this->held_object->SetWorldTwist(
 							finger_link->GetWorldLinearVel(),
 							math::Vector3(0.0, 0.0, 0.0)
 						);
+						
+						/**ROS_WARN("Finger pose is (%f, %f, %f)(%f, %f, %f, %f), Object pose is (%f, %f, %f)(%f, %f, %f, %f)",
+							finger_pose.pos.x,
+							finger_pose.pos.y,
+							finger_pose.pos.z,
+										
+							finger_pose.rot.w,
+							finger_pose.rot.x,
+							finger_pose.rot.y,
+							finger_pose.rot.z,
+								
+										
+							held_object->GetWorldCoGPose().pos.x,
+							held_object->GetWorldCoGPose().pos.y,
+							held_object->GetWorldCoGPose().pos.z,
+										
+							held_object->GetWorldCoGPose().rot.w,
+							held_object->GetWorldCoGPose().rot.x,
+							held_object->GetWorldCoGPose().rot.y,
+							held_object->GetWorldCoGPose().rot.z
+						);*/
 					}
 				}
 			}
