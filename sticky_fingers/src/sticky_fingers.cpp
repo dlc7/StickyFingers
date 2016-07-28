@@ -128,7 +128,7 @@ namespace gazebo{
 										tf::Vector3(object_pose.pos.x, object_pose.pos.y, object_pose.pos.z)
 									);
 									
-									ho_transform = origin_obj_trans * origin_finger_trans.inverse();
+									ho_transform = origin_finger_trans.inverse() * origin_obj_trans;
 									
 									ROS_WARN("Offset is (%f, %f, %f)(%f, %f, %f, %f)",
 										ho_transform.getOrigin().x(),
@@ -152,7 +152,7 @@ namespace gazebo{
 										object_pose.rot.w, object_pose.rot.x, object_pose.rot.y, object_pose.rot.z
 									);
 									
-									tf::Transform object_transform = ho_transform * origin_finger_trans;
+									tf::Transform object_transform = origin_finger_trans * ho_transform;
 									tf::Vector3 oot_vec = object_transform.getOrigin();
 									tf::Quaternion oot_qat = object_transform.getRotation().normalize();
 									
@@ -202,7 +202,7 @@ namespace gazebo{
 							tf::Vector3(finger_pose.pos.x, finger_pose.pos.y, finger_pose.pos.z)
 						);
 					
-						tf::Transform object_transform = ho_transform * origin_finger_trans;
+						tf::Transform object_transform = origin_finger_trans * ho_transform;
 						tf::Vector3 oot_vec = object_transform.getOrigin();
 						tf::Quaternion oot_qat = object_transform.getRotation().normalize();
 									
@@ -212,11 +212,12 @@ namespace gazebo{
 						);
 						this->held_object->SetWorldPose(origin_final_pose,true,true);
 						this->held_object->SetWorldTwist(
+						
 							finger_link->GetWorldLinearVel(),
 							math::Vector3(0.0, 0.0, 0.0)
 						);
 						
-						/**ROS_WARN("Finger pose is (%f, %f, %f)(%f, %f, %f, %f), Object pose is (%f, %f, %f)(%f, %f, %f, %f)",
+						/*ROS_WARN("Finger pose is (%f, %f, %f)(%f, %f, %f, %f), Object pose is (%f, %f, %f)(%f, %f, %f, %f)",
 							finger_pose.pos.x,
 							finger_pose.pos.y,
 							finger_pose.pos.z,
