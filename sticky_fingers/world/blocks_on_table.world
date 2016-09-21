@@ -4,11 +4,11 @@
 		<include>
 			<uri>model://ground_plane</uri>
 		</include>
-		
+
 		<include>
 			<uri>model://sun</uri>
 		</include>
-		
+
 		<model name="finger">
 			<pose>0 1.0 4.0 0 0 0</pose>
 			<link name="finger_body">
@@ -32,7 +32,8 @@
 				</visual>
 			</link>
 			
-			<link name="finger_tip">
+			<!--This is the sticky part.-->
+			<link name="ftip">
 				<pose>0 0 -0.75 0 0 0</pose>
 				<gravity>0</gravity>
 
@@ -47,6 +48,10 @@
 						<ambient>1.0 0.0 0.0 0.0</ambient>
 					</material>
 				</visual>
+				
+				<!--The collision object used within the <collision> element of a contact sensor MUST be of the form <link name>_collision.
+				I sincerely wish that I was making this up:
+				http://answers.gazebosim.org/question/6929/contact-sensor-error-when-using-gazebo-223/ -->
 				<collision name="ftip_collision">
 					<geometry>
 						<box>
@@ -55,19 +60,20 @@
 					</geometry>
 				</collision>
 				
+				<!--The actual sticky_fingers contact.-->
 				<sensor name='tip_contact' type='contact'>
 					<plugin name="sticky_finger" filename="libsticky_fingers.so">
 						<capacity>25</capacity>
 					</plugin>
-          			<contact>
-            			<collision>ftip_collision</collision>
-          			</contact>
-        		</sensor>
+          				<contact>
+            					<collision>ftip_collision</collision>
+          				</contact>
+        			</sensor>
 			</link>
 			
 			<joint name="fixed1" type="prismatic">
  				<parent>finger_body</parent>
- 				<child>finger_tip</child>
+ 				<child>ftip</child>
  				<pose>0 0 0 0 0 0</pose>
  				<axis>
  					<xyz>0 0 1</xyz>
@@ -79,6 +85,7 @@
   			</joint>
 		</model>
 		
+		<!-- Two light blocks, connected by a joint-->
 		<model name="blocks_light">
 			<pose> 0 1.0 2.125 0 0 0</pose>
 			<link name="b1_body">
@@ -138,6 +145,7 @@
   			</joint>
 		</model>
 		
+		<!--A heavy black block, not connected to anything.-->
 		<model name="block_heavy">
 			<pose> -0.5 1.0 2.125 0 0 0</pose>
 			<link name="bh_body">
@@ -164,12 +172,13 @@
 			</link>
 		</model>
 		
+		<!--A static table for the blocks to sit on.-->
 		<model name="table">
 			<pose>0 1.0 0.0 0 0 0</pose>
 			<include>
-          		<static>true</static>
-          		<uri>model://table</uri>
-        	</include>
-        </model>
+          			<static>true</static>
+          			<uri>model://table</uri>
+        		</include>
+        	</model>
 	</world>
 </sdf>

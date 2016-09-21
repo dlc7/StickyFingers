@@ -21,10 +21,10 @@ catkin_simple()
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-# Executables
-
+# Executable
 cs_add_executable(finger_control_dummy_node src/finger_control_dummy_node.cpp)
 
+#Library
 add_library(sticky_fingers src/sticky_fingers.cpp)
 target_link_libraries(sticky_fingers ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 

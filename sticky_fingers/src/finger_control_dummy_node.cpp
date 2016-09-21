@@ -1,4 +1,6 @@
 #include <ros/ros.h>
+
+//Auto-generated ROS service header
 #include <sticky_fingers/StickyControl.h>
 int main(int argc, char** argv){
 
