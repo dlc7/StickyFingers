@@ -2,6 +2,7 @@
 
 //Auto-generated ROS service header
 #include <sticky_fingers/StickyControl.h>
+
 int main(int argc, char** argv){
 
 	ros::init(argc, argv, "sticky_fingers_control"); // name this node 
